@@ -15,9 +15,11 @@
    "name" : "Marpa-PP",
    "no_index" : {
       "directory" : [
+         "pperl",
          "config",
          "inc",
          "t",
+         "tool",
          "author.t"
       ],
       "namespace" : [
@@ -67,15 +69,7 @@
    "provides" : {
       "Marpa::PP" : {
          "file" : "lib/Marpa/PP.pm",
-         "version" : "0.005_004"
-      },
-      "Marpa::PP::Display" : {
-         "file" : "lib/Marpa/PP/Display.pm",
-         "version" : 0
-      },
-      "Marpa::PP::Display::Internal" : {
-         "file" : "lib/Marpa/PP/Display.pm",
-         "version" : 0
+         "version" : "0.005_005"
       },
       "Marpa::PP::Grammar" : {
          "file" : "lib/Marpa/PP/Grammar.pm",
@@ -89,16 +83,8 @@
          "file" : "lib/Marpa/PP/Callback.pm",
          "version" : 0
       },
-      "Marpa::PP::Internal::Carp_Not" : {
-         "file" : "lib/Marpa/PP/Internal/Carp_Not.pm",
-         "version" : 0
-      },
       "Marpa::PP::Internal::Grammar" : {
          "file" : "lib/Marpa/PP/Grammar.pm",
-         "version" : 0
-      },
-      "Marpa::PP::Internal::Perl" : {
-         "file" : "lib/Marpa/PP/Perl.pm",
          "version" : 0
       },
       "Marpa::PP::Internal::Recognizer" : {
@@ -113,24 +99,8 @@
          "file" : "lib/Marpa/PP/Value.pm",
          "version" : 0
       },
-      "Marpa::PP::Offset" : {
-         "file" : "lib/Marpa/PP/Offset.pm",
-         "version" : 0
-      },
-      "Marpa::PP::Perl" : {
-         "file" : "lib/Marpa/PP/Perl.pm",
-         "version" : 0
-      },
       "Marpa::PP::Recognizer" : {
          "file" : "lib/Marpa/PP/Recognizer.pm",
-         "version" : 0
-      },
-      "Marpa::PP::Test" : {
-         "file" : "lib/Marpa/PP/Test.pm",
-         "version" : 0
-      },
-      "Marpa::XS::Test::Util" : {
-         "file" : "lib/Marpa/PP/Test/Util.pm",
          "version" : 0
       }
    },
@@ -140,5 +110,5 @@
          "url" : "git://github.com/jeffreykegler/Marpa-PP.git"
       }
    },
-   "version" : "0.005_004"
+   "version" : "0.005_005"
 }

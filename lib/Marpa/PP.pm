@@ -19,7 +19,7 @@ use 5.010;
 use strict;
 use warnings;
 use vars qw($VERSION $STRING_VERSION);
-$VERSION = '0.005_004';
+$VERSION = '0.005_005';
 $STRING_VERSION = $VERSION;
 $VERSION = eval $VERSION;
 
@@ -28,32 +28,39 @@ use English qw( -no_match_vars );
 
 use Marpa::PP::Version;
 
-# Sensible defaults if not defined
-$Marpa::PP::USE_PP =  !defined $Marpa::XS::VERSION;
-$Marpa::PP::USE_XS //= ! $Marpa::PP::USE_PP;
-
-# Die if both PP and XS were chosen
-if ( $Marpa::PP::USE_PP and $Marpa::PP::USE_XS ) {
-    Carp::croak('Cannot specify both USE_XS and USE_PP');
+# Die if more than one of the Marpa modules is loaded
+if ( defined $Marpa::MODULE ) {
+    Carp::croak("You can only load one of the Marpa modules at a time\n",
+        "The module ", $Marpa::MODULE, " is already loaded\n");
 }
-# Die if both PP and XS were unset
-if ( ! $Marpa::PP::USE_PP and ! $Marpa::PP::USE_XS ) {
-    Carp::croak('Cannot unset both USE_XS and USE_PP');
+$Marpa::MODULE = "Marpa::PP";
+$Marpa::USING_PP = 1;
+$Marpa::USING_XS = 0;
+if ( defined $Marpa::VERSION ) {
+    Carp::croak('Cannot load both Marpa::PP and Marpa');
+}
+if ( defined $Marpa::XS::VERSION ) {
+    Carp::croak('Cannot load both Marpa::PP and Marpa::XS');
+}
+
+@Marpa::CARP_NOT = ();
+for my $start (qw(Marpa Marpa::PP Marpa::XS))
+{
+    for my $middle ('', '::Internal')
+    {
+	for my $end ('', qw(::Recognizer ::Callback ::Grammar ::Value))
+	{
+	    push @Marpa::CARP_NOT, $start . $middle . $end;
+	}
+    }
+}
+PACKAGE: for my $package (@Marpa::CARP_NOT) {
+    no strict 'refs';
+    next PACKAGE if  $package eq 'Marpa';
+    *{ $package . q{::CARP_NOT} } = \@Marpa::CARP_NOT;
 }
 
 require Marpa::PP::Internal;
-require Marpa::PP::Internal::Carp_Not;
-Marpa::PP::Internal::Carp_Not->import();
-
-if ( $Marpa::PP::USE_XS ) {
-    $Marpa::USING_XS = 1;
-    $Marpa::USING_PP = 0;
-    return 1;
-}
-
-$Marpa::USING_XS = 0;
-$Marpa::USING_PP = 1;
-
 require Marpa::PP::Grammar;
 require Marpa::PP::Recognizer;
 require Marpa::PP::Value;

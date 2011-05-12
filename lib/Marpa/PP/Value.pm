@@ -21,14 +21,14 @@ use strict;
 use integer;
 
 use English qw( -no_match_vars );
-use Marpa::PP::Internal::Carp_Not;
 
 # This perlcritic check is broken as of 9 Aug 2010
 ## no critic (TestingAndDebugging::ProhibitNoWarnings)
 no warnings qw(qw);
 ## use critic
 
-use Marpa::PP::Offset qw(
+BEGIN {
+my $structure = <<'END_OF_STRUCTURE';
 
     :package=Marpa::PP::Internal::Or_Node
 
@@ -44,9 +44,12 @@ use Marpa::PP::Offset qw(
     INITIAL_RANK_REF
 
     =LAST_FIELD
-);
+END_OF_STRUCTURE
+    Marpa::offset($structure);
+} ## end BEGIN
 
-use Marpa::PP::Offset qw(
+BEGIN {
+my $structure = <<'END_OF_STRUCTURE';
 
     :package=Marpa::PP::Internal::And_Node
 
@@ -79,9 +82,12 @@ use Marpa::PP::Offset qw(
 
     =LAST_FIELD
 
-);
+END_OF_STRUCTURE
+    Marpa::offset($structure);
+} ## end BEGIN
 
-use Marpa::PP::Offset qw(
+BEGIN {
+my $structure = <<'END_OF_STRUCTURE';
 
     :package=Marpa::PP::Internal::Iteration_Node
 
@@ -104,9 +110,12 @@ use Marpa::PP::Offset qw(
     CLEAN { Boolean -- true if rank does not need to
     be recalculated }
 
-);
+END_OF_STRUCTURE
+    Marpa::offset($structure);
+} ## end BEGIN
 
-use Marpa::PP::Offset qw(
+BEGIN {
+my $structure = <<'END_OF_STRUCTURE';
 
     :package=Marpa::PP::Internal::Task
 
@@ -122,9 +131,12 @@ use Marpa::PP::Offset qw(
     STACK_INODE
     CHECK_FOR_CYCLE
 
-);
+END_OF_STRUCTURE
+    Marpa::offset($structure);
+} ## end BEGIN
 
-use Marpa::PP::Offset qw(
+BEGIN {
+my $structure = <<'END_OF_STRUCTURE';
 
     :package=Marpa::PP::Internal::Op
 
@@ -137,9 +149,12 @@ use Marpa::PP::Offset qw(
     VIRTUAL_KERNEL
     VIRTUAL_TAIL
 
-);
+END_OF_STRUCTURE
+    Marpa::offset($structure);
+} ## end BEGIN
 
-use Marpa::PP::Offset qw(
+BEGIN {
+my $structure = <<'END_OF_STRUCTURE';
 
     :package=Marpa::PP::Internal::Choice
 
@@ -149,7 +164,9 @@ use Marpa::PP::Offset qw(
     RANK { *NOT* a rank ref }
     ITERATION_SUBTREE
 
-);
+END_OF_STRUCTURE
+    Marpa::offset($structure);
+} ## end BEGIN
 
 use constant SKIP => -1;
 

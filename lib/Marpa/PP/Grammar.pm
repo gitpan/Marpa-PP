@@ -31,8 +31,6 @@ use strict;
 use integer;
 use utf8;
 
-use Marpa::PP::Internal::Carp_Not;
-
 =begin Implementation:
 
 Structures and Objects: The design is to present an object-oriented
@@ -44,52 +42,55 @@ what in C would be structures.
 
 =cut
 
-use Marpa::PP::Offset qw(
+BEGIN {
+my $structure = <<'END_OF_STRUCTURE';
+            :package=Marpa::PP::Internal::Symbol
 
-    :package=Marpa::PP::Internal::Symbol
+            ID
+            NAME
 
-    ID
-    NAME
+            =LAST_BASIC_DATA_FIELD
 
-    =LAST_BASIC_DATA_FIELD
+            NULL_ALIAS { for a non-nullable symbol,
+            ref of a its nulling alias,
+            if there is one
+            otherwise undef }
 
-    NULL_ALIAS { for a non-nullable symbol,
-    ref of a its nulling alias,
-    if there is one
-    otherwise undef }
+            NULLING { always is null? }
+            RANKING_ACTION
+            NULL_VALUE { null value }
 
-    NULLING { always is null? }
-    RANKING_ACTION
-    NULL_VALUE { null value }
+            NULLABLE { The number of nullable symbols
+            the symbol represents,
+            0 if the symbol is not nullable. }
 
-    NULLABLE { The number of nullable symbols
-    the symbol represents,
-    0 if the symbol is not nullable. }
+            =LAST_EVALUATOR_FIELD
 
-    =LAST_EVALUATOR_FIELD
+            TERMINAL { terminal? }
 
-    TERMINAL { terminal? }
+            =LAST_RECOGNIZER_FIELD
 
-    =LAST_RECOGNIZER_FIELD
+            LH_RULE_IDS { rules with this as the lhs,
+            as a ref to an array of rule refs }
 
-    LH_RULE_IDS { rules with this as the lhs,
-    as a ref to an array of rule refs }
+            RH_RULE_IDS { rules with this in the rhs,
+            as a ref to an array of rule refs }
 
-    RH_RULE_IDS { rules with this in the rhs,
-    as a ref to an array of rule refs }
+            ACCESSIBLE { reachable from start symbol? }
+            PRODUCTIVE { reachable from input symbol? }
+            START { is one of the start symbols? }
+            COUNTED { used on rhs of counted rule? }
 
-    ACCESSIBLE { reachable from start symbol? }
-    PRODUCTIVE { reachable from input symbol? }
-    START { is one of the start symbols? }
-    COUNTED { used on rhs of counted rule? }
+            WARN_IF_NO_NULL_VALUE { should have a null value -- warn
+            if not }
 
-    WARN_IF_NO_NULL_VALUE { should have a null value -- warn
-    if not }
+            =LAST_FIELD
+END_OF_STRUCTURE
+    Marpa::offset($structure);
+} ## end BEGIN
 
-    =LAST_FIELD
-);
-
-use Marpa::PP::Offset qw(
+BEGIN {
+my $structure = <<'END_OF_STRUCTURE';
 
     :package=Marpa::PP::Internal::Rule
 
@@ -119,9 +120,13 @@ use Marpa::PP::Offset qw(
     PRODUCTIVE { reachable from input symbol? }
 
     =LAST_FIELD
-);
 
-use Marpa::PP::Offset qw(
+END_OF_STRUCTURE
+    Marpa::offset($structure);
+} ## end BEGIN
+
+BEGIN {
+my $structure = <<'END_OF_STRUCTURE';
 
     :package=Marpa::PP::Internal::NFA
 
@@ -132,9 +137,12 @@ use Marpa::PP::Offset qw(
     AT_NULLING { dot just before a nullable symbol? }
     COMPLETE { rule is complete? }
 
-);
+END_OF_STRUCTURE
+    Marpa::offset($structure);
+} ## end BEGIN
 
-use Marpa::PP::Offset qw(
+BEGIN {
+my $structure = <<'END_OF_STRUCTURE';
 
     :package=Marpa::PP::Internal::AHFA
 
@@ -164,18 +172,25 @@ use Marpa::PP::Offset qw(
     NFA_STATES { in an AHFA: an array of NFA states }
 
     =LAST_FIELD
-);
 
-use Marpa::PP::Offset qw(
+END_OF_STRUCTURE
+    Marpa::offset($structure);
+} ## end BEGIN
+
+BEGIN {
+my $structure = <<'END_OF_STRUCTURE';
 
     :package=Marpa::PP::Internal::LR0_item
 
     RULE
     POSITION
 
-);
+END_OF_STRUCTURE
+    Marpa::offset($structure);
+} ## end BEGIN
 
-use Marpa::PP::Offset qw(
+BEGIN {
+my $structure = <<'END_OF_STRUCTURE';
 
     :package=Marpa::PP::Internal::Grammar
 
@@ -222,19 +237,25 @@ use Marpa::PP::Offset qw(
     TRACE_RULES
 
     =LAST_FIELD
-);
+
+END_OF_STRUCTURE
+    Marpa::offset($structure);
+} ## end BEGIN
 
 package Marpa::PP::Internal::Grammar;
 
 use POSIX qw(ceil);
 
 # values for grammar phases
-use Marpa::PP::Offset qw(
+BEGIN {
+my $structure = <<'END_OF_STRUCTURE';
 
     :package=Marpa::PP::Internal::Phase
     NEW RULES PRECOMPUTED
 
-);
+END_OF_STRUCTURE
+    Marpa::offset($structure);
+} ## end BEGIN
 
 sub phase_description {
     my $phase = shift;
@@ -250,8 +271,6 @@ sub phase_description {
 package Marpa::PP::Internal::Grammar;
 
 use English qw( -no_match_vars );
-
-use Marpa::PP::Internal::Carp_Not;
 
 # Longest RHS is 2**28-1.  It's 28 bits, not 32, so
 # it will fit in the internal priorities computed
@@ -346,7 +365,7 @@ sub Marpa::PP::Grammar::new {
     my ( $class, @arg_hashes ) = @_;
 
     my $grammar = [];
-    bless $grammar, $class;
+    bless $grammar, 'Marpa::PP::Grammar';
 
     # set the defaults and the default defaults
     $grammar->[Marpa::PP::Internal::Grammar::TRACE_FILE_HANDLE] = *STDERR;

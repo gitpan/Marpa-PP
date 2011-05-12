@@ -28,12 +28,17 @@ use integer;
 
 use English qw( -no_match_vars );
 
-use Marpa::PP::Offset qw(
+BEGIN {
+my $structure = <<'END_OF_STRUCTURE';
+
     :package=Marpa::PP::Internal::Earley_Set
     ITEMS { The Earley items for this set. }
     HASH { Hash by origin & state.  To prevent dups. }
     POSTDOT { Index by postdot symbol. }
-);
+
+END_OF_STRUCTURE
+    Marpa::offset($structure);
+} ## end BEGIN
 
 # Elements of the EARLEY ITEM structure
 # Note that these are Earley items as modified by Aycock & Horspool,
@@ -43,7 +48,8 @@ use Marpa::PP::Offset qw(
 # We don't prune the Earley items because we want ORIGIN and SET
 # around for debugging.
 
-use Marpa::PP::Offset qw(
+BEGIN {
+my $structure = <<'END_OF_STRUCTURE';
 
     :package=Marpa::PP::Internal::Earley_Item
 
@@ -63,12 +69,15 @@ use Marpa::PP::Offset qw(
     ORIGIN { The number of the Earley set with the parent item(s) }
     SET { The set this item is in. For debugging. }
 
-);
+END_OF_STRUCTURE
+    Marpa::offset($structure);
+} ## end BEGIN
 
 our $LEO_CLASS;
 $LEO_CLASS = 'Marpa::PP::Internal::Leo_Item';
 
-use Marpa::PP::Offset qw(
+BEGIN {
+my $structure = <<'END_OF_STRUCTURE';
 
     :package=Marpa::PP::Internal::Leo_Item
 
@@ -79,10 +88,13 @@ use Marpa::PP::Offset qw(
     SET { The set this item is in.  }
     TOP_TO_STATE { The AHFA to-state of the top-level transition. }
 
-);
+END_OF_STRUCTURE
+    Marpa::offset($structure);
+} ## end BEGIN
 
 # Elements of the RECOGNIZER structure
-use Marpa::PP::Offset qw(
+BEGIN {
+my $structure = <<'END_OF_STRUCTURE';
 
     :package=Marpa::PP::Internal::Recognizer
 
@@ -136,11 +148,11 @@ use Marpa::PP::Offset qw(
 
     MODE
 
-);
+END_OF_STRUCTURE
+    Marpa::offset($structure);
+} ## end BEGIN
 
 package Marpa::PP::Internal::Recognizer;
-
-use Marpa::PP::Internal::Carp_Not;
 
 use English qw( -no_match_vars );
 
@@ -153,7 +165,7 @@ my $parse_number = 0;
 # Returns the new parse object or throws an exception
 sub Marpa::PP::Recognizer::new {
     my ( $class, @arg_hashes ) = @_;
-    my $recce = bless [], $class;
+    my $recce = bless [], 'Marpa::PP::Recognizer';
 
     my $grammar;
     ARG_HASH: for my $arg_hash (@arg_hashes) {
@@ -169,7 +181,7 @@ sub Marpa::PP::Recognizer::new {
     my $grammar_class = ref $grammar;
     Marpa::exception(
         "${class}::new() grammar arg has wrong class: $grammar_class")
-        if not $grammar_class eq 'Marpa::Grammar';
+        if not $grammar_class eq 'Marpa::PP::Grammar';
 
     my $problems = $grammar->[Marpa::PP::Internal::Grammar::PROBLEMS];
     if ($problems) {
@@ -743,7 +755,8 @@ sub Marpa::PP::Recognizer::show_earley_sets {
 
 } ## end sub Marpa::PP::Recognizer::show_earley_sets
 
-use Marpa::PP::Offset qw(
+BEGIN {
+my $structure = <<'END_OF_STRUCTURE';
 
     :package=Marpa::PP::Internal::Progress_Report
 
@@ -751,7 +764,9 @@ use Marpa::PP::Offset qw(
     POSITION
     ORIGIN
 
-);
+END_OF_STRUCTURE
+    Marpa::offset($structure);
+} ## end BEGIN
 
 sub Marpa::PP::Recognizer::show_progress {
     my ( $recce, $start_ix, $end_ix ) = @_;
@@ -918,9 +933,20 @@ sub Marpa::PP::Recognizer::alternative {
     my ( $recce, $symbol_name, $value, $length ) = @_;
 
     Marpa::exception(
-        'No recognizer object for Marpa::PP::Recognizer::tokens')
-        if not defined $recce
-            or ref $recce ne 'Marpa::Recognizer';
+        'Missing recognizer argument for Marpa::PP::Recognizer::alternative()')
+        if not defined $recce;
+
+    {
+        my $recce_class = ref $recce;
+        $recce_class //= "not defined";
+        Marpa::exception(
+            "recognizer argument of alternative() has wrong class\n",
+            "Class of argument is ",
+            $recce_class,
+            "\n",
+            "Class of argument should be Marpa::PP::Recognizer\n"
+        ) if $recce_class ne 'Marpa::PP::Recognizer';
+    }
 
     my $grammar = $recce->[Marpa::PP::Internal::Recognizer::GRAMMAR];
     local $Marpa::PP::Internal::TRACE_FH = my $trace_fh =
@@ -1092,11 +1118,22 @@ sub Marpa::PP::Recognizer::tokens {
     my ( $recce, $tokens, $token_ix_ref ) = @_;
 
     Marpa::exception(
-        'No recognizer object for Marpa::PP::Recognizer::tokens')
-        if not defined $recce
-            or ref $recce ne 'Marpa::Recognizer';
+        'Missing recognizer argument for Marpa::PP::Recognizer::tokens()')
+        if not defined $recce;
 
-    Marpa::exception('No tokens arg for Marpa::PP::Recognizer::tokens')
+     {
+        my $recce_class = ref $recce;
+        $recce_class //= "not defined";
+        Marpa::exception(
+            "recognizer argument of tokens() has wrong class\n",
+            "Class of argument is ",
+            $recce_class,
+            "\n",
+            "Class of argument should be Marpa::PP::Recognizer\n"
+        ) if $recce_class ne 'Marpa::PP::Recognizer';
+    }
+
+    Marpa::exception('No tokens arg for Marpa::PP::Recognizer::tokens()')
         if not defined $tokens;
 
     my $mode = $recce->[Marpa::PP::Internal::Recognizer::MODE];
