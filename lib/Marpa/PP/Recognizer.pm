@@ -32,6 +32,8 @@ BEGIN {
 my $structure = <<'END_OF_STRUCTURE';
 
     :package=Marpa::PP::Internal::Earley_Set
+
+    ID { The ordinal for this set }
     ITEMS { The Earley items for this set. }
     HASH { Hash by origin & state.  To prevent dups. }
     POSTDOT { Index by postdot symbol. }
@@ -110,6 +112,8 @@ my $structure = <<'END_OF_STRUCTURE';
     EXPECTED_TERMINALS { terminals which are expected at the
         current earleme }
     USE_LEO { Use Leo items? }
+    NEXT_ORDINAL { Ordinal of next Earley set }
+    EARLEY_SETS_BY_ORDINAL { Array of Earley sets by ordinal }
 
     TRACE_FILE_HANDLE
 
@@ -286,10 +290,14 @@ sub Marpa::PP::Recognizer::new {
     my $earley_set = [];
     $earley_set->[Marpa::PP::Internal::Earley_Set::POSTDOT] = \%postdot;
     $earley_set->[Marpa::PP::Internal::Earley_Set::ITEMS] = \@earley_items;
+    $earley_set->[Marpa::PP::Internal::Earley_Set::ID] = 0;
     $recce->[Marpa::PP::Internal::Recognizer::EARLEY_SETS] = [$earley_set];
 
     $recce->[Marpa::PP::Internal::Recognizer::FURTHEST_EARLEME]       = 0;
     $recce->[Marpa::PP::Internal::Recognizer::LAST_COMPLETED_EARLEME] = 0;
+    $recce->[Marpa::PP::Internal::Recognizer::NEXT_ORDINAL]           = 1;
+    $recce->[Marpa::PP::Internal::Recognizer::EARLEY_SETS_BY_ORDINAL]->[0] =
+        $earley_set;
 
     my @terminals_expected = grep { $terminal_names->{$_} } keys %postdot;
     $recce->[Marpa::PP::Internal::Recognizer::EXPECTED_TERMINALS] =
@@ -515,14 +523,23 @@ sub Marpa::PP::Recognizer::set {
 # For testing, especially that the Leo items
 # are doing their job.
 sub Marpa::PP::Recognizer::earley_set_size {
-    my ( $recce, $name ) = @_;
-    my $last_completed_earleme =
-        $recce->[Marpa::PP::Internal::Recognizer::LAST_COMPLETED_EARLEME];
-    return if not defined $last_completed_earleme;
-    my $earley_set = $recce->[EARLEY_SETS]->[$last_completed_earleme];
+    my ( $recce, $ordinal ) = @_;
+    my $earley_set = $recce->[Marpa::PP::Internal::Recognizer::EARLEY_SETS_BY_ORDINAL]->[$ordinal];
     return if not defined $earley_set;
     return scalar @{ $earley_set->[Marpa::PP::Internal::Earley_Set::ITEMS] };
 } ## end sub Marpa::PP::Recognizer::earley_set_size
+
+sub Marpa::PP::Recognizer::latest_earley_set {
+    my ($recce) = @_;
+    my $earleme = $recce->[Marpa::PP::Internal::Recognizer::LAST_COMPLETED_EARLEME];
+    while (1) {
+	# Earley set has a defined ORDINAL, so this loop must terminate
+        my $earley_set = $recce->[Marpa::PP::Internal::Recognizer::EARLEY_SETS]->[$earleme];
+	my $ordinal = $earley_set->[Marpa::PP::Internal::Earley_Set::ID];
+	return $ordinal if defined $ordinal;
+	$earleme--;
+    }
+}
 
 sub Marpa::PP::Recognizer::check_terminal {
     my ( $recce, $name ) = @_;
@@ -769,26 +786,49 @@ END_OF_STRUCTURE
 } ## end BEGIN
 
 sub Marpa::PP::Recognizer::show_progress {
-    my ( $recce, $start_ix, $end_ix ) = @_;
+    my ( $recce, $start_ordinal, $end_ordinal ) = @_;
     my $grammar = $recce->[Marpa::PP::Internal::Recognizer::GRAMMAR];
-    my $rules = $grammar->[Marpa::PP::Internal::Grammar::RULES];
-    my $last_ix = $recce->[Marpa::PP::Internal::Recognizer::FURTHEST_EARLEME];
-    $start_ix //= $recce->[Marpa::PP::Internal::Recognizer::LAST_COMPLETED_EARLEME];
-    if ( $start_ix < 0 or $start_ix > $last_ix ) {
-        return
-            "Marpa::PP::Recognizer::show_progress start index is $start_ix, must be in range 0-$last_ix";
+    my $rules   = $grammar->[Marpa::PP::Internal::Grammar::RULES];
+
+    my $earley_sets_by_ordinal =
+        $recce->[Marpa::PP::Internal::Recognizer::EARLEY_SETS_BY_ORDINAL];
+    my $last_ordinal = $#{$earley_sets_by_ordinal};
+
+    my $start_ix;
+    if ( not defined $start_ordinal ) {
+        $start_ix =
+            $recce->[Marpa::PP::Internal::Recognizer::LAST_COMPLETED_EARLEME];
     }
-    $end_ix //= $start_ix;
-    if ( $end_ix < 0 ) {
-        $end_ix += $last_ix + 1;
+    else {
+        if ( $start_ordinal < 0 or $start_ordinal > $last_ordinal ) {
+            return
+                "Marpa::PP::Recognizer::show_progress start index is $start_ordinal, "
+                . "must be in range 0-$last_ordinal";
+        }
+        $start_ix =
+            $earley_sets_by_ordinal->[$start_ordinal]
+            ->[Marpa::PP::Internal::Earley_Set::ID];
+    } ## end else [ if ( not defined $start_ordinal ) ]
+
+    my $end_ix;
+    if (not defined $end_ordinal) {
+        $end_ix = $start_ix;
+    } else {
+	my $end_ordinal_argument = $end_ordinal;
+	if ($end_ordinal < 0) {
+	   $end_ordinal += $last_ordinal + 1;
+	}
+	if ( $end_ordinal < 0 ) {
+	    return
+		"Marpa::PP::Recognizer::show_progress end index is $end_ordinal_argument, "
+		. sprintf " must be in range %d-%d", -($last_ordinal+1), $last_ordinal;
+	}
+        $end_ix = $earley_sets_by_ordinal->[$end_ordinal] ->[Marpa::PP::Internal::Earley_Set::ID];
     }
-    if ( $end_ix < 0 or $end_ix > $last_ix ) {
-        return
-            "Marpa::PP::Recognizer::show_progress end index is $end_ix, must be in range 0-$last_ix";
-    }
+
     my $text = q{};
     for my $current ( $start_ix .. $end_ix ) {
-	my %by_rule_by_position = ();
+        my %by_rule_by_position = ();
         my $reports = report_progress( $recce, $current );
 
         for my $report ( @{$reports} ) {
@@ -804,37 +844,37 @@ sub Marpa::PP::Recognizer::show_progress {
         for my $rule_id ( sort { $a <=> $b } keys %by_rule_by_position ) {
             my $by_position = $by_rule_by_position{$rule_id};
             for my $position ( sort { $a <=> $b } keys %{$by_position} ) {
-		my $raw_origins = $by_position->{$position};
-                my @origins = sort { $a <=> $b } keys %{$raw_origins};
-		my $origins_count = scalar @origins;
+                my $raw_origins   = $by_position->{$position};
+                my @origins       = sort { $a <=> $b } keys %{$raw_origins};
+                my $origins_count = scalar @origins;
                 my $origin_desc;
                 if ( $origins_count <= 3 ) {
                     $origin_desc = join q{,}, @origins;
                 }
                 else {
                     $origin_desc = $origins[0] . q{...} . $origins[-1];
-                } ## end else [ if ( scalar @{$origins} < 3 ) ]
+                }
 
-		my $rule = $rules->[$rule_id];
+                my $rule = $rules->[$rule_id];
                 my $rhs_length =
                     scalar @{ $rule->[Marpa::PP::Internal::Rule::RHS] };
                 my $item_text;
 
                 # flag indicating whether we need to show the dot in the rule
                 if ( $position >= $rhs_length ) {
-		    $item_text .= "F$rule_id";
-                } ## end if ( $position >= $rhs_length )
-                elsif ($position) {
-		    $item_text .= "R$rule_id:$position";
-                } ## end elsif ($position)
-                else {
-		    $item_text .= "P$rule_id";
+                    $item_text .= "F$rule_id";
                 }
-		$item_text .= " x$origins_count" if $origins_count > 1;
-		$item_text .= q{ @} . $origin_desc . q{-} . $current . q{ };
-		$item_text .= Marpa::PP::show_dotted_rule( $rule, $position );
-                $text .= $item_text . "\n";
-            } ## end for my $postion ( sort { $a <=> $b } keys %{$by_position...})
+                elsif ($position) {
+                    $item_text .= "R$rule_id:$position";
+                }
+                else {
+                    $item_text .= "P$rule_id";
+                }
+                $item_text .= " x$origins_count" if $origins_count > 1;
+                $item_text .= q{ @} . $origin_desc . q{-} . $current . q{ };
+                $item_text .= Marpa::PP::show_dotted_rule( $rule, $position );
+                $text      .= $item_text . "\n";
+            } ## end for my $position ( sort { $a <=> $b } keys %{...})
         } ## end for my $rule_id ( sort { $a <=> $b } keys ...)
     } ## end for my $current ( $start_ix .. $end_ix )
     return $text;
@@ -1662,6 +1702,14 @@ sub Marpa::PP::Recognizer::earleme_complete {
                 or Marpa::exception("Cannot print: $ERRNO");
         }
     } ## end if ( $trace_terminals > 1 )
+    
+    if ( scalar @{$earley_items} > 0 ) {
+        my $ordinal =
+            $recce->[Marpa::PP::Internal::Recognizer::NEXT_ORDINAL]++;
+        $earley_set->[Marpa::PP::Internal::Earley_Set::ID] = $ordinal;
+        $recce->[Marpa::PP::Internal::Recognizer::EARLEY_SETS_BY_ORDINAL]
+            ->[$ordinal] = $earley_set;
+    } ## end if ( scalar @{$earley_items} > 0 )
 
     return scalar @terminals_expected;
 

@@ -172,6 +172,50 @@ use constant SKIP => -1;
 
 use warnings;
 
+sub Marpa::PP::Recognizer::and_node_tag {
+    my ($recce, $and_node) = @_;
+    my $or_nodes = $recce->[Marpa::PP::Internal::Recognizer::OR_NODES];
+    my $grammar = $recce->[Marpa::PP::Internal::Recognizer::GRAMMAR];
+    my $symbol_hash = $grammar->[Marpa::PP::Internal::Grammar::SYMBOL_HASH];
+    my $recce_c     = $recce->[Marpa::PP::Internal::Recognizer::C];
+    my $origin_earleme = $and_node->[Marpa::PP::Internal::And_Node::START_EARLEME];
+    my $current_earleme = $and_node->[Marpa::PP::Internal::And_Node::END_EARLEME];
+    my $middle_earleme = $and_node->[Marpa::PP::Internal::And_Node::CAUSE_EARLEME];
+    my $position = $and_node->[Marpa::PP::Internal::And_Node::POSITION] + 1;
+    my $rule = $and_node->[Marpa::PP::Internal::And_Node::RULE_ID];
+    my $tag =
+	  'R' 
+	. $rule . q{:}
+	. $position . q{@}
+	. $origin_earleme . q{-}
+	. $current_earleme;
+    my $cause_id  = $and_node->[Marpa::PP::Internal::And_Node::CAUSE_ID];
+    if (defined $cause_id) {
+	my $cause = $or_nodes->[$cause_id];
+	my $cause_rule = $cause->[Marpa::PP::Internal::Or_Node::RULE_ID];
+	$tag .= 'C' . $cause_rule;
+    } else {
+	my $token_name =
+	    $and_node->[Marpa::PP::Internal::And_Node::TOKEN_NAME];
+	my $symbol = $symbol_hash->{$token_name};
+	$tag .= 'S' . $symbol;
+    }
+    $tag .= q{@} . $middle_earleme;
+    return $tag;
+}
+
+sub Marpa::PP::Recognizer::or_node_tag {
+    my ( $recce, $or_node ) = @_;
+    die unless defined $or_node;
+    my $item = $or_node->[Marpa::PP::Internal::Or_Node::ITEM];
+    my $set = $item->[Marpa::PP::Internal::Earley_Item::SET];
+    my $origin   = $item->[Marpa::PP::Internal::Earley_Item::ORIGIN];
+    my $rule     = $or_node->[Marpa::PP::Internal::Or_Node::RULE_ID];
+    my $position = $or_node->[Marpa::PP::Internal::Or_Node::POSITION];
+    return 'R' . $rule . q{:} . $position . q{@} . $origin . q{-} . $set;
+} ## end sub Marpa::PP::Recognizer::or_node_tag
+
+
 sub Marpa::PP::Recognizer::show_recce_and_node {
     my ( $recce, $and_node, $verbose ) = @_;
     $verbose //= 0;
@@ -1122,9 +1166,7 @@ sub Marpa::PP::Internal::Recognizer::evaluate {
                     $and_node->[Marpa::PP::Internal::And_Node::TOKEN_NAME];
 
                 print {$Marpa::PP::Internal::TRACE_FH}
-                    'Pushed value from a',
-                    $and_node->[Marpa::PP::Internal::And_Node::ID],
-                    q{ },
+                    'Pushed value from ',
                     $and_node->[Marpa::PP::Internal::And_Node::TAG], ': ',
                     ( $token_name ? qq{$token_name = } : q{} ),
                     Data::Dumper->new( [$value_ref] )->Terse(1)->Dump
@@ -1153,9 +1195,7 @@ sub Marpa::PP::Internal::Recognizer::evaluate {
                         say {$Marpa::PP::Internal::TRACE_FH}
                             'Popping ',
                             $argc,
-                            ' values to evaluate a',
-                            $and_node->[Marpa::PP::Internal::And_Node::ID],
-                            q{ },
+                            ' values to evaluate ',
                             $and_node->[Marpa::PP::Internal::And_Node::TAG],
                             ', rule: ', Marpa::PP::brief_rule($rule)
                             or Marpa::exception(
@@ -1176,9 +1216,7 @@ sub Marpa::PP::Internal::Recognizer::evaluate {
                             ->[Marpa::PP::Internal::And_Node::RULE_ID];
                         my $rule = $rules->[$rule_id];
                         say {$Marpa::PP::Internal::TRACE_FH}
-                            'Head of Virtual Rule: a',
-                            $and_node->[Marpa::PP::Internal::And_Node::ID],
-                            q{ },
+                            'Head of Virtual Rule: ',
                             $and_node->[Marpa::PP::Internal::And_Node::TAG],
                             ', rule: ', Marpa::PP::brief_rule($rule),
                             "\n",
@@ -1206,9 +1244,7 @@ sub Marpa::PP::Internal::Recognizer::evaluate {
                             ->[Marpa::PP::Internal::And_Node::RULE_ID];
                         my $rule = $rules->[$rule_id];
                         say {$Marpa::PP::Internal::TRACE_FH}
-                            'Head of Virtual Rule (discards separation): a',
-                            $and_node->[Marpa::PP::Internal::And_Node::ID],
-                            q{ },
+                            'Head of Virtual Rule (discards separation): ',
                             $and_node->[Marpa::PP::Internal::And_Node::TAG],
                             ', rule: ', Marpa::PP::brief_rule($rule),
                             "\nAdding $real_symbol_count symbols; currently ",
@@ -1242,9 +1278,7 @@ sub Marpa::PP::Internal::Recognizer::evaluate {
                             ->[Marpa::PP::Internal::And_Node::RULE_ID];
                         my $rule = $rules->[$rule_id];
                         say {$Marpa::PP::Internal::TRACE_FH}
-                            'Virtual Rule: a',
-                            $and_node->[Marpa::PP::Internal::And_Node::ID],
-                            q{ },
+                            'Virtual Rule: ',
                             $and_node->[Marpa::PP::Internal::And_Node::TAG],
                             ', rule: ', Marpa::PP::brief_rule($rule),
                             "\nAdding $real_symbol_count, now ",
@@ -1264,9 +1298,7 @@ sub Marpa::PP::Internal::Recognizer::evaluate {
                             ->[Marpa::PP::Internal::And_Node::RULE_ID];
                         my $rule = $rules->[$rule_id];
                         say {$Marpa::PP::Internal::TRACE_FH}
-                            'New Virtual Rule: a',
-                            $and_node->[Marpa::PP::Internal::And_Node::ID],
-                            q{ },
+                            'New Virtual Rule: ',
                             $and_node->[Marpa::PP::Internal::And_Node::TAG],
                             ', rule: ', Marpa::PP::brief_rule($rule),
                             "\nSymbol count is $real_symbol_count, now ",
@@ -1382,12 +1414,12 @@ sub Marpa::PP::Internal::Recognizer::do_null_parse {
     $and_node->[Marpa::PP::Internal::And_Node::CAUSE_EARLEME] = 0;
     $and_node->[Marpa::PP::Internal::And_Node::END_EARLEME]   = 0;
     $and_node->[Marpa::PP::Internal::And_Node::ID]            = 0;
+    my $symbol_name = $start_symbol->[Marpa::PP::Internal::Symbol::NAME];
+    $and_node->[Marpa::PP::Internal::And_Node::TOKEN_NAME]    = $symbol_name;
+    $and_node->[Marpa::PP::Internal::And_Node::TAG] =
+        Marpa::PP::Recognizer::and_node_tag($recce, $and_node);
 
     $recce->[Marpa::PP::Internal::Recognizer::AND_NODES]->[0] = $and_node;
-
-    my $symbol_name = $start_symbol->[Marpa::PP::Internal::Symbol::NAME];
-    $and_node->[Marpa::PP::Internal::And_Node::TAG] =
-        q{T@0-0_} . $symbol_name;
 
     return Marpa::PP::Internal::Recognizer::evaluate( $recce, [$and_node] );
 
@@ -1575,18 +1607,6 @@ sub Marpa::PP::Recognizer::value {
             my $start_rule_id = $start_rule->[Marpa::PP::Internal::Rule::ID];
 
             my $start_or_node = [];
-            {
-                my $start_or_node_tag =
-                    $start_or_node->[Marpa::PP::Internal::Or_Node::TAG] =
-                    "F$start_rule_id"
-                    .
-                    ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
-                    '@0-' .
-                    ## use critic
-                    $current_parse_set;
-                $recce->[Marpa::PP::Internal::Recognizer::OR_NODE_HASH]
-                    ->{$start_or_node_tag} = $start_or_node;
-            }
             $start_or_node->[Marpa::PP::Internal::Or_Node::ID] = 0;
             $start_or_node->[Marpa::PP::Internal::Or_Node::ITEM] =
                     $start_item;
@@ -1597,6 +1617,13 @@ sub Marpa::PP::Recognizer::value {
             $start_or_node->[Marpa::PP::Internal::Or_Node::CYCLE] = 0;
             $start_or_node->[Marpa::PP::Internal::Or_Node::POSITION] =
                 scalar @{ $start_rule->[Marpa::PP::Internal::Rule::RHS] };
+            {
+                my $start_or_node_tag =
+                    $start_or_node->[Marpa::PP::Internal::Or_Node::TAG] =
+			Marpa::PP::Recognizer::or_node_tag($recce, $start_or_node);
+                $recce->[Marpa::PP::Internal::Recognizer::OR_NODE_HASH]
+                    ->{$start_or_node_tag} = $start_or_node;
+            }
 
             # Zero out the evaluation
             $#{$and_nodes}       = -1;
@@ -1620,15 +1647,17 @@ sub Marpa::PP::Recognizer::value {
 
             if ( $ranking_method eq 'constant' ) {
                 push @task_list, [Marpa::PP::Internal::Task::RANK_ALL],
-                    [
-                    Marpa::PP::Internal::Task::POPULATE_DEPTH, 0,
-                    [$start_or_node]
-                    ],
-                    [
-                    Marpa::PP::Internal::Task::POPULATE_OR_NODE,
-                    $start_or_node
-                    ];
             } ## end if ( $ranking_method eq 'constant' )
+
+            push @task_list,
+                [
+                Marpa::PP::Internal::Task::POPULATE_DEPTH, 0,
+                [$start_or_node]
+                ],
+                [
+                Marpa::PP::Internal::Task::POPULATE_OR_NODE,
+                $start_or_node
+                ];
 
             next TASK;
 
@@ -2343,9 +2372,10 @@ sub Marpa::PP::Recognizer::value {
                             $cause_rule->[Marpa::PP::Internal::Rule::ID];
 
                         my $cause_name =
-                            "F$cause_rule_id" . q{@}
-                            . $cause
-                            ->[Marpa::PP::Internal::Earley_Item::ORIGIN]
+                            "R$cause_rule_id:"
+			    .  (scalar @{ $cause_rule->[Marpa::PP::Internal::Rule::RHS] })
+			    . q{@}
+                            . $cause->[Marpa::PP::Internal::Earley_Item::ORIGIN]
                             . q{-}
                             . $cause->[Marpa::PP::Internal::Earley_Item::SET];
 
@@ -2439,7 +2469,8 @@ sub Marpa::PP::Recognizer::value {
 
             } ## end for my $link_work_item (@link_worklist)
 
-            my @child_and_nodes = values %and_node_data;
+            my @child_and_nodes =
+                map { $and_node_data{$_} } sort keys %and_node_data;
 
             for my $and_node (@child_and_nodes) {
 
@@ -2463,40 +2494,9 @@ sub Marpa::PP::Recognizer::value {
                 Marpa::exception("Too many and-nodes for evaluator: $id")
                     if $id & ~(Marpa::PP::Internal::N_FORMAT_MAX);
                 $and_node->[Marpa::PP::Internal::And_Node::ID] = $id;
+                $and_node->[Marpa::PP::Internal::And_Node::TAG] =
+		    Marpa::PP::Recognizer::and_node_tag($recce, $and_node);
 
-                {
-                    my $token_name = $and_node
-                        ->[Marpa::PP::Internal::And_Node::TOKEN_NAME];
-                    my $cause_earleme = $and_node
-                        ->[Marpa::PP::Internal::And_Node::CAUSE_EARLEME];
-                    my $tag            = q{};
-                    my $predecessor_id = $and_node
-                        ->[Marpa::PP::Internal::And_Node::PREDECESSOR_ID];
-                    my $predecessor_or_node =
-                          $predecessor_id
-                        ? $or_nodes->[$predecessor_id]
-                        : undef;
-                    $predecessor_or_node
-                        and $tag
-                        .= $predecessor_or_node
-                        ->[Marpa::PP::Internal::Or_Node::TAG];
-                    my $cause_id =
-                        $and_node->[Marpa::PP::Internal::And_Node::CAUSE_ID];
-                    my $cause_or_node =
-                        $cause_id ? $or_nodes->[$cause_id] : undef;
-                    $cause_or_node
-                        and $tag
-                        .= $cause_or_node
-                        ->[Marpa::PP::Internal::Or_Node::TAG];
-                    $token_name
-                        and $tag
-                        .= q{T@}
-                        . $cause_earleme . q{-}
-                        . $work_set . q{_}
-                        . $token_name;
-                    $and_node->[Marpa::PP::Internal::And_Node::TAG] = $tag;
-
-                }
             } ## end for my $and_node (@child_and_nodes)
 
             # Populate the or-node, now that we have ID's for all the and-nodes
@@ -2661,6 +2661,9 @@ sub Marpa::PP::Recognizer::value {
                 scalar @{$iteration_stack};
 
             push @{$iteration_stack}, $work_iteration_node;
+
+say STDERR "End of STACK_INODE: ", $recce->show_iteration_stack(99) if $MARPA::PP::DEBUG;
+
             next TASK;
 
         } ## end if ( $task_type == Marpa::PP::Internal::Task::STACK_INODE)
@@ -2803,7 +2806,9 @@ sub Marpa::PP::Recognizer::value {
 
             # No or-nodes at next depth?
             # Great, we are done!
-            my @or_nodes_at_next_depth = values %or_nodes_at_next_depth;
+            my @or_nodes_at_next_depth =
+                map { $or_nodes_at_next_depth{$_} }
+                sort keys %or_nodes_at_next_depth;
             next TASK if not scalar @or_nodes_at_next_depth;
 
             push @task_list,

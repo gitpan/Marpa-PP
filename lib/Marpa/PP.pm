@@ -18,10 +18,11 @@ package Marpa::PP;
 use 5.010;
 use strict;
 use warnings;
-use vars qw($VERSION $STRING_VERSION);
-$VERSION = '0.005_006';
+use vars qw($VERSION $STRING_VERSION $DEBUG);
+$VERSION = '0.005_007';
 $STRING_VERSION = $VERSION;
 $VERSION = eval $VERSION;
+$DEBUG = 0;
 
 use Carp;
 use English qw( -no_match_vars );
@@ -60,6 +61,12 @@ PACKAGE: for my $package (@Marpa::CARP_NOT) {
     *{ $package . q{::CARP_NOT} } = \@Marpa::CARP_NOT;
 }
 
+if (not $ENV{'MARPA_AUTHOR_TEST'}) {
+    $Marpa::PP::DEBUG = 0;
+} else {
+    $Marpa::PP::DEBUG = 1;
+}
+
 require Marpa::PP::Internal;
 require Marpa::PP::Grammar;
 require Marpa::PP::Recognizer;
@@ -86,6 +93,7 @@ require Marpa::PP::Callback;
 *Marpa::Recognizer::earley_set_size = \&Marpa::PP::Recognizer::earley_set_size;
 *Marpa::Recognizer::end_input = \&Marpa::PP::Recognizer::end_input;
 *Marpa::Recognizer::exhausted = \&Marpa::PP::Recognizer::exhausted;
+*Marpa::Recognizer::latest_earley_set = \&Marpa::PP::Recognizer::latest_earley_set;
 *Marpa::Recognizer::new = \&Marpa::PP::Recognizer::new;
 *Marpa::Recognizer::read = \&Marpa::PP::Recognizer::read;
 *Marpa::Recognizer::reset_evaluation = \&Marpa::PP::Recognizer::reset_evaluation;

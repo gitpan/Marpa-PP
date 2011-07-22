@@ -54,15 +54,14 @@ lib/Marpa/PP/Internal.pm
 lib/Marpa/PP/Recognizer.pm
 lib/Marpa/PP/Slot.pm
 lib/Marpa/PP/Value.pm
-pod/Advanced/Algorithm.pod
 pod/Advanced/Bibliography.pod
-pod/Advanced/Implementation.pod
 pod/Advanced/Models.pod
 pod/Debug.pod
 pod/Grammar.pod
 pod/Marpa_PP.pod
 pod/Parse_Terms.pod
 pod/Recognizer.pod
+pod/Rewrite.pod
 pod/Semantics.pod
 pod/Semantics/Infinite.pod
 pod/Semantics/Null.pod
@@ -73,6 +72,8 @@ pperl/Marpa/Perl.pm
 t/00-load.t
 t/02-load_pp.t
 t/Makefile
+t/infinite_plex.t
+t/null_infinite1.t
 t/shared/ah2.t
 t/shared/ah_numeric.t
 t/shared/chaf.t
@@ -94,7 +95,6 @@ t/shared/common/gabend.t
 t/shared/common/implementation.t
 t/shared/common/infinite.t
 t/shared/common/infinite2.t
-t/shared/common/infinite_plex.t
 t/shared/common/initial_nulls.t
 t/shared/common/leo.t
 t/shared/common/leo2.t
@@ -104,7 +104,6 @@ t/shared/common/leo_example.t
 t/shared/common/limits.t
 t/shared/common/minus.t
 t/shared/common/null_example.t
-t/shared/common/null_infinite1.t
 t/shared/common/null_infinite4.t
 t/shared/common/null_value.t
 t/shared/common/pascal.t
@@ -131,7 +130,6 @@ t/shared/gabend.t
 t/shared/implementation.t
 t/shared/infinite.t
 t/shared/infinite2.t
-t/shared/infinite_plex.t
 t/shared/initial_nulls.t
 t/shared/leo.t
 t/shared/leo2.t
@@ -141,7 +139,6 @@ t/shared/leo_example.t
 t/shared/limits.t
 t/shared/minus.t
 t/shared/null_example.t
-t/shared/null_infinite1.t
 t/shared/null_infinite4.t
 t/shared/null_value.t
 t/shared/pascal.t
