@@ -124,7 +124,6 @@ my $structure = <<'END_OF_STRUCTURE';
     POPULATE_DEPTH
 
     RANK_ALL
-    GRAFT_SUBTREE
 
     ITERATE
     FIX_TREE
@@ -162,7 +161,6 @@ my $structure = <<'END_OF_STRUCTURE';
 
     AND_NODE
     RANK { *NOT* a rank ref }
-    ITERATION_SUBTREE
 
 END_OF_STRUCTURE
     Marpa::offset($structure);
@@ -215,166 +213,54 @@ sub Marpa::PP::Recognizer::or_node_tag {
     return 'R' . $rule . q{:} . $position . q{@} . $origin . q{-} . $set;
 } ## end sub Marpa::PP::Recognizer::or_node_tag
 
-
-sub Marpa::PP::Recognizer::show_recce_and_node {
-    my ( $recce, $and_node, $verbose ) = @_;
-    $verbose //= 0;
-
-    my $text = "show_recce_and_node:\n";
-
-    my $grammar = $recce->[Marpa::PP::Internal::Recognizer::GRAMMAR];
-    my $rules   = $grammar->[Marpa::PP::Internal::Grammar::RULES];
-
-    my $name = $and_node->[Marpa::PP::Internal::And_Node::TAG];
-    my $id   = $and_node->[Marpa::PP::Internal::And_Node::ID];
-    my $predecessor_id =
-        $and_node->[Marpa::PP::Internal::And_Node::PREDECESSOR_ID];
-    my $cause_id  = $and_node->[Marpa::PP::Internal::And_Node::CAUSE_ID];
-    my $value_ref = $and_node->[Marpa::PP::Internal::And_Node::VALUE_REF];
-    my $rule_id   = $and_node->[Marpa::PP::Internal::And_Node::RULE_ID];
-    my $position  = $and_node->[Marpa::PP::Internal::And_Node::POSITION];
-
-    my @rhs = ();
-
-    my $rule          = $rules->[$rule_id];
-    my $original_rule = $rule->[Marpa::PP::Internal::Rule::ORIGINAL_RULE]
-        // $rule;
-    my $is_virtual_rule = $rule != $original_rule;
-
-    my $or_nodes = $recce->[Marpa::PP::Internal::Recognizer::OR_NODES];
-
-    my $predecessor;
-    if ($predecessor_id) {
-        $predecessor = $or_nodes->[$predecessor_id];
-
-        push @rhs, $predecessor->[Marpa::PP::Internal::Or_Node::TAG]
-            . "o$predecessor_id";
-    }    # predecessor
-
-    my $cause;
-    if ($cause_id) {
-        $cause = $or_nodes->[$cause_id];
-        push @rhs, $cause->[Marpa::PP::Internal::Or_Node::TAG] . "o$cause_id";
-    }    # cause
-
-    if ( defined $value_ref ) {
-        my $value_as_string =
-            Data::Dumper->new( [$value_ref] )->Terse(1)->Dump;
-        chomp $value_as_string;
-        push @rhs, $value_as_string;
-    }    # value
-
-    $text .= "R$rule_id:$position" . "a$id -> " . join( q{ }, @rhs ) . "\n";
-
-    SHOW_RULE: {
-        if ( $is_virtual_rule and $verbose >= 2 ) {
-            $text
-                .= '    rule '
-                . $rule->[Marpa::PP::Internal::Rule::ID] . ': '
-                . Marpa::PP::show_dotted_rule( $rule, $position + 1 )
-                . "\n    "
-                . Marpa::PP::brief_virtual_rule( $rule, $position + 1 )
-                . "\n";
-            last SHOW_RULE;
-        } ## end if ( $is_virtual_rule and $verbose >= 2 )
-
-        last SHOW_RULE if not $verbose;
-        $text
-            .= '    rule '
-            . $rule->[Marpa::PP::Internal::Rule::ID] . ': '
-            . Marpa::PP::brief_virtual_rule( $rule, $position + 1 ) . "\n";
-
-    } ## end SHOW_RULE:
-
-    if ( $verbose >= 2 ) {
-        my @comment = ();
-        if ( $and_node->[Marpa::PP::Internal::And_Node::VALUE_OPS] ) {
-            push @comment, 'value_ops';
-        }
-        if ( scalar @comment ) {
-            $text .= q{    } . ( join q{, }, @comment ) . "\n";
-        }
-    } ## end if ( $verbose >= 2 )
-
-    return $text;
-
-} ## end sub Marpa::PP::Recognizer::show_recce_and_node
-
-sub Marpa::PP::Recognizer::show_recce_or_node {
-    my ( $recce, $or_node, $verbose, ) = @_;
-    $verbose //= 0;
-
-    my $grammar     = $recce->[Marpa::PP::Internal::Recognizer::GRAMMAR];
-    my $rules       = $grammar->[Marpa::PP::Internal::Grammar::RULES];
-    my $rule_id     = $or_node->[Marpa::PP::Internal::Or_Node::RULE_ID];
-    my $position    = $or_node->[Marpa::PP::Internal::Or_Node::POSITION];
-    my $or_node_id  = $or_node->[Marpa::PP::Internal::Or_Node::ID];
-    my $or_node_tag = $or_node->[Marpa::PP::Internal::Or_Node::TAG];
-
-    my $text = "show_recce_or_node o$or_node_id:\n";
-
-    my $rule          = $rules->[$rule_id];
-    my $original_rule = $rule->[Marpa::PP::Internal::Rule::ORIGINAL_RULE]
-        // $rule;
-    my $is_virtual_rule = $rule != $original_rule;
-
-    my $and_nodes = $recce->[Marpa::PP::Internal::Recognizer::AND_NODES];
-
-    LIST_AND_NODES: {
-        my $and_node_ids =
-            $or_node->[Marpa::PP::Internal::Or_Node::AND_NODE_IDS];
-        if ( not defined $and_node_ids ) {
-            $text .= $or_node_tag . "o$or_node_id: UNPOPULATED\n";
-            last LIST_AND_NODES;
-        }
-        if ( not scalar @{$and_node_ids} ) {
-            $text .= $or_node_tag . "o$or_node_id: Empty and-node list!\n";
-            last LIST_AND_NODES;
-        }
-        for my $index ( 0 .. $#{$and_node_ids} ) {
-            my $and_node_id  = $and_node_ids->[$index];
-            my $and_node     = $and_nodes->[$and_node_id];
-            my $and_node_tag = $or_node_tag . "a$and_node_id";
-            if ( $verbose >= 2 ) {
-                $text .= $or_node_tag
-                    . "o$or_node_id: $or_node_tag -> $and_node_tag\n";
-            }
-            $text .= $recce->show_recce_and_node( $and_node, $verbose );
-        } ## end for my $index ( 0 .. $#{$and_node_ids} )
-    } ## end LIST_AND_NODES:
-
-    SHOW_RULE: {
-        if ( $is_virtual_rule and $verbose >= 2 ) {
-            $text
-                .= '    rule '
-                . $rule->[Marpa::PP::Internal::Rule::ID] . ': '
-                . Marpa::PP::show_dotted_rule( $rule, $position + 1 )
-                . "\n    "
-                . Marpa::PP::brief_virtual_rule( $rule, $position + 1 )
-                . "\n";
-            last SHOW_RULE;
-        } ## end if ( $is_virtual_rule and $verbose >= 2 )
-
-        last SHOW_RULE if not $verbose;
-        $text
-            .= '    rule '
-            . $rule->[Marpa::PP::Internal::Rule::ID] . ': '
-            . Marpa::PP::brief_virtual_rule( $rule, $position + 1 ) . "\n";
-
-    } ## end SHOW_RULE:
-
-    return $text;
-
-} ## end sub Marpa::PP::Recognizer::show_recce_or_node
+sub Marpa::PP::Recognizer::show_and_nodes {
+    my ($recce) = @_;
+    my $and_nodes  = $recce->[Marpa::PP::Internal::Recognizer::AND_NODES];
+    my @data = ();
+    for my $and_node (@{$and_nodes}) {
+         my $desc = $recce->and_node_tag($and_node);
+	 my ($rule, $position, $origin, $dot, $cause_type, $cause, $middle) = (
+	     $desc =~ /\A R (\d+) [:] (\d+)
+	     [@] (\d+) [-] (\d+) ([SC]) (\d+)
+	     [@] (\d+) \z/msx
+	 );
+        push @data,
+            [ $origin, $dot, $rule, $position,
+		$middle,
+		($cause_type eq "C" ? $cause : -1),
+		($cause_type eq "S" ? $cause : -1),
+		$desc ];
+    }
+    my @tags = map { $_->[-1] } sort {
+       $a->[0] <=> $b->[0]
+       or $a->[1] <=> $b->[1]
+       or $a->[2] <=> $b->[2]
+       or $a->[3] <=> $b->[3]
+       or $a->[4] <=> $b->[4]
+       or $a->[5] <=> $b->[5]
+       or $a->[6] <=> $b->[6]
+    } @data;
+    my $result = (join "\n", @tags) . "\n";
+    return $result;
+}
 
 sub Marpa::PP::Recognizer::show_or_nodes {
-    my ($recce, $verbose) = @_;
-    my $text;
+    my ($recce) = @_;
     my $or_nodes  = $recce->[Marpa::PP::Internal::Recognizer::OR_NODES];
+    my @data = ();
     for my $or_node (@{$or_nodes}) {
-         $text .= $recce->show_recce_or_node($or_node, $verbose);
+         my $desc = $recce->or_node_tag($or_node);
+	 my @elements = ($desc =~ /\A R (\d+) [:] (\d+) [@] (\d+) [-] (\d+) \z/msx);
+	 push @data, [ @elements, $desc ];
     }
-    return $text;
+    my @tags = map { $_->[-1] } sort {
+       $a->[2] <=> $b->[2]
+       or $a->[3] <=> $b->[3]
+       or $a->[0] <=> $b->[0]
+       or $a->[1] <=> $b->[1]
+    } @data;
+    my $result = (join "\n", @tags) . "\n";
+    return $result;
 }
 
 sub Marpa::PP::brief_iteration_node {
@@ -490,15 +376,6 @@ sub Marpa::PP::Recognizer::show_iteration_node {
             if ($verbose) {
                 $text .= q{; rank=}
                     . $choice->[Marpa::PP::Internal::Choice::RANK];
-                if ( my $saved_subtree =
-                    $choice->[Marpa::PP::Internal::Choice::ITERATION_SUBTREE]
-                    )
-                {
-                    $text
-                        .= q{; }
-                        . ( scalar @{$saved_subtree} )
-                        . ' nodes saved';
-                } ## end if ( my $saved_subtree = $choice->[...])
             } ## end if ($verbose)
             $text .= "\n";
             last CHOICE if not $verbose;
@@ -1750,13 +1627,6 @@ sub Marpa::PP::Recognizer::value {
 
             push @task_list, [Marpa::PP::Internal::Task::FIX_TREE];
 
-            if ( $choices->[0]
-                ->[Marpa::PP::Internal::Choice::ITERATION_SUBTREE] )
-            {
-                push @task_list, [Marpa::PP::Internal::Task::GRAFT_SUBTREE];
-                next TASK;
-            } ## end if ( $choices->[0]->[...])
-
             if ($grammar_has_cycle) {
                 push @task_list, [Marpa::PP::Internal::Task::CHECK_FOR_CYCLE];
                 next TASK;
@@ -1888,207 +1758,10 @@ sub Marpa::PP::Recognizer::value {
                 next TASK;
             } ## end for my $field ( ...)
 
-            # If we have all the child nodes and the rank is clean,
-            # pop this node from the worklist and move on.
-            if ( $working_node->[Marpa::PP::Internal::Iteration_Node::CLEAN] )
-            {
-                pop @{$iteration_node_worklist};
-                next FIX_TREE_LOOP;
-            }
-
-            # If this is a constant rank node, set the rank,
-            # mark it clean and move on.
-            # Constant ranked nodes never lower in rank and
-            # therefore, until they become exhausted,
-            # they never lose their place to another choice.
-            if (defined(
-                    my $constant_rank_ref =
-                        $working_and_node
-                        ->[Marpa::PP::Internal::And_Node::CONSTANT_RANK_REF]
-                )
-                )
-            {
-
-                # Set the new rank
-                $choice->[Marpa::PP::Internal::Choice::RANK] =
-                    $working_node->[Marpa::PP::Internal::Iteration_Node::RANK]
-                    = ${$constant_rank_ref};
-
-                $working_node->[Marpa::PP::Internal::Iteration_Node::CLEAN] =
-                    1;
-                pop @{$iteration_node_worklist};
-                next FIX_TREE_LOOP;
-            } ## end if ( defined( my $constant_rank_ref = $working_and_node...))
-
-            # Rank is dirty and not constant,
-            # so recalculate it
-            no integer;
-
-            # Sum up the new rank, if it is not constant:
-            my $token_rank_ref = $working_and_node
-                ->[Marpa::PP::Internal::And_Node::TOKEN_RANK_REF];
-            my $new_rank = defined $token_rank_ref ? ${$token_rank_ref} : 0;
-
-            my $predecessor_ix = $working_node
-                ->[Marpa::PP::Internal::Iteration_Node::PREDECESSOR_IX];
-
-            $new_rank +=
-                  $predecessor_ix >= 0
-                ? $iteration_stack->[$predecessor_ix]
-                ->[Marpa::PP::Internal::Iteration_Node::RANK]
-                : 0;
-
-            my $cause_ix = $working_node
-                ->[Marpa::PP::Internal::Iteration_Node::CAUSE_IX];
-
-            $new_rank +=
-                  $cause_ix >= 0
-                ? $iteration_stack->[$cause_ix]
-                ->[Marpa::PP::Internal::Iteration_Node::RANK]
-                : 0;
-
-            # Set the new rank
-            $choice->[Marpa::PP::Internal::Choice::RANK] =
-                $working_node->[Marpa::PP::Internal::Iteration_Node::RANK] =
-                $new_rank;
-
-            # Now to determine if the new rank puts this choice out
-            # of proper order.
-            # First off, unless there are 2 or more choices, the
-            # current choice is clearly the right one.
-            #
-            # Secondly, if the current choice is still greater
-            # than or equal to the next highest, it is the right
-            # one
-            #
-            # Mark the current node clean, pop it off the work list
-            # and look at the next one
-            if ( scalar @{$choices} < 2
-                or $new_rank
-                >= $choices->[1]->[Marpa::PP::Internal::Choice::RANK] )
-            {
-                $working_node->[Marpa::PP::Internal::Iteration_Node::CLEAN] =
-                    1;
-                pop @{$iteration_node_worklist};
-
-                next FIX_TREE_LOOP;
-            } ## end if ( scalar @{$choices} < 2 or $new_rank >= $choices...)
-
-            # Now we know we have to swap choices.  But
-            # with which other choice?  We look for the
-            # first one not greater than (less than or
-            # equal to) the current choice.
-            my $first_le_choice = 1;
-            FIND_LE: while ( ++$first_le_choice <= $#{$choices} ) {
-                last FIND_LE
-                    if $new_rank >= $choices->[$first_le_choice]
-                        ->[Marpa::PP::Internal::Choice::RANK];
-            }
-
-            # Next we determine how big a chunk of stack needs to be saved
-            # when we swap in the new choice
-            my $last_descendant_ix = $working_node_ix;
-            LOOK_FOR_DESCENDANT: while (1) {
-                my $inode    = $iteration_stack->[$last_descendant_ix];
-                my $child_ix = $inode
-                    ->[Marpa::PP::Internal::Iteration_Node::PREDECESSOR_IX];
-                if ( $child_ix >= 0 ) {
-                    $last_descendant_ix = $child_ix;
-                    next LOOK_FOR_DESCENDANT;
-                }
-                $child_ix =
-                    $inode->[Marpa::PP::Internal::Iteration_Node::CAUSE_IX];
-                last LOOK_FOR_DESCENDANT if $child_ix < 0;
-                $last_descendant_ix = $child_ix;
-            } ## end while (1)
-
-            # We need to save the part of iteration stack
-            # below the node being reordered
-            $choice->[Marpa::PP::Internal::Choice::ITERATION_SUBTREE] =
-                [ @{$iteration_stack}
-                    [ $working_node_ix + 1 .. $last_descendant_ix ] ];
-
-            # Get the list of parent nodes
-            # in the portion of the stack not deleted
-            my @parents = ();
-            for (
-                my $ix = $last_descendant_ix + 1;
-                $ix <= $#{$iteration_stack};
-                $ix++
-                )
-            {
-                my $parent =
-                    $iteration_stack->[$ix]
-                    ->[Marpa::PP::Internal::Iteration_Node::PARENT];
-                defined $_ and $_ < $working_node_ix and push @parents, $ix;
-            } ## end for ( my $ix = $last_descendant_ix + 1; $ix <= $#{...})
-
-            # "Dirty" the predecessor indexes in the undeleted parents
-            # No causes will be eliminated.
-            for my $direct_parent (@parents) {
-                $iteration_stack->[$direct_parent]
-                    ->[Marpa::PP::Internal::Iteration_Node::PREDECESSOR_IX] =
-                    undef;
-            }
-
-            # Now "dirty" the ranks of the ancestors
-            # Climb the parent links, marking the ranks
-            # of the nodes "dirty", until we hit one that is
-            # already dirty
-            push @parents, $working_node_ix;
-            PARENT: while ( defined( my $parent_ix = pop @parents ) ) {
-                my $parent_node = $iteration_stack->[$parent_ix];
-
-                # We could also stop ascending at the first constant ranks,
-                # but it's not clear that the saved work later makes up
-                # for the cost of the test here.
-                next PARENT
-                    if not $parent_node
-                        ->[Marpa::PP::Internal::Iteration_Node::CLEAN];
-                $parent_node->[Marpa::PP::Internal::Iteration_Node::CLEAN] =
-                    0;
-                push @parents,
-                    $parent_node
-                    ->[Marpa::PP::Internal::Iteration_Node::PARENT];
-            } ## end while ( defined( my $parent_ix = pop @parents ) )
-
-            # "Dirty" the working node.
-            $working_node
-                ->[Marpa::PP::Internal::Iteration_Node::PREDECESSOR_IX] =
-                undef;
-            $working_node->[Marpa::PP::Internal::Iteration_Node::CAUSE_IX] =
-                undef;
-
-            # Prune the iteration stack
-            $#{$iteration_stack} = $working_node_ix;
-
-            # Our worklist of iteration nodes is now
-            # almost 100% wrong.
-            # Throw it away and start over.
-            # The cycle hash also needs to be cleared.
-            $iteration_node_worklist = undef;
-            $cycle_hash              = undef;
-
-            my $swap_choice = $first_le_choice - 1;
-
-            ( $choices->[0], $choices->[$swap_choice] ) =
-                ( $choices->[$swap_choice], $choices->[0] );
-
-            push @task_list, [Marpa::PP::Internal::Task::FIX_TREE];
-
-            if ( $choices->[0]
-                ->[Marpa::PP::Internal::Choice::ITERATION_SUBTREE] )
-            {
-                push @task_list, [Marpa::PP::Internal::Task::GRAFT_SUBTREE];
-                next TASK;
-            } ## end if ( $choices->[0]->[...])
-
-            if ($grammar_has_cycle) {
-                push @task_list, [Marpa::PP::Internal::Task::CHECK_FOR_CYCLE];
-                next TASK;
-            }
-
-            next TASK;
+	    $working_node->[Marpa::PP::Internal::Iteration_Node::CLEAN] =
+		1;
+	    pop @{$iteration_node_worklist};
+	    next FIX_TREE_LOOP;
 
         } ## end while ( $task_type == Marpa::PP::Internal::Task::FIX_TREE)
 
@@ -2667,80 +2340,6 @@ say STDERR "End of STACK_INODE: ", $recce->show_iteration_stack(99) if $MARPA::P
             next TASK;
 
         } ## end if ( $task_type == Marpa::PP::Internal::Task::STACK_INODE)
-
-        if ( $task_type == Marpa::PP::Internal::Task::GRAFT_SUBTREE ) {
-
-            my $subtree_parent_node = $iteration_stack->[-1];
-            my $or_node             = $subtree_parent_node
-                ->[Marpa::PP::Internal::Iteration_Node::OR_NODE];
-
-            if ($trace_tasks) {
-                print {$Marpa::PP::Internal::TRACE_FH}
-                    'Task: GRAFT_SUBTREE o',
-                    $or_node->[Marpa::PP::Internal::Or_Node::ID],
-                    q{; }, ( scalar @task_list ), " tasks pending\n"
-                    or Marpa::exception('print to trace handle failed');
-            } ## end if ($trace_tasks)
-
-            my $subtree_parent_ix = $#{$iteration_stack};
-            my $and_node_ids =
-                $or_node->[Marpa::PP::Internal::Or_Node::AND_NODE_IDS];
-
-            my $choices = $subtree_parent_node
-                ->[Marpa::PP::Internal::Iteration_Node::CHOICES];
-
-            # set RANK
-            my $choice = $choices->[0];
-            {
-                no integer;
-                $subtree_parent_node
-                    ->[Marpa::PP::Internal::Iteration_Node::RANK] =
-                    $choice->[Marpa::PP::Internal::Choice::RANK];
-
-            }
-
-            my $subtree =
-                $choice->[Marpa::PP::Internal::Choice::ITERATION_SUBTREE];
-
-            # Undef the old "frozen" values,
-            # now that we are putting them back into play.
-            $choice->[Marpa::PP::Internal::Choice::ITERATION_SUBTREE] = undef;
-
-            # Clear the cycle hash
-            $cycle_hash = undef;
-
-            push @{$iteration_stack}, @{$subtree};
-            my $top_of_stack = $#{$iteration_stack};
-
-            # Reset the parent's cause and predecessor
-            IX:
-            for (
-                my $ix = $subtree_parent_ix + 1;
-                $ix <= $top_of_stack;
-                $ix++
-                )
-            {
-                my $iteration_node = $iteration_stack->[$ix];
-                if ( $iteration_node
-                    ->[Marpa::PP::Internal::Iteration_Node::PARENT]
-                    == $subtree_parent_ix )
-                {
-                    my $child_type = $iteration_node
-                        ->[Marpa::PP::Internal::Iteration_Node::CHILD_TYPE];
-                    $iteration_stack->[$subtree_parent_ix]->[
-                        $child_type
-                        == Marpa::PP::Internal::And_Node::PREDECESSOR_ID
-                        ? Marpa::PP::Internal::Iteration_Node::PREDECESSOR_IX
-                        : Marpa::PP::Internal::Iteration_Node::CAUSE_IX
-                        ]
-                        = $ix;
-                } ## end if ( $iteration_node->[...])
-            } ## end for ( my $ix = $subtree_parent_ix + 1; $ix <= ...)
-
-            # We are done.
-            next TASK;
-
-        } ## end if ( $task_type == Marpa::PP::Internal::Task::GRAFT_SUBTREE)
 
         if ( $task_type == Marpa::PP::Internal::Task::RANK_ALL ) {
 
