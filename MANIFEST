@@ -30,6 +30,7 @@ author.t/.gitignore
 author.t/Makefile
 author.t/accept_tidy
 author.t/ampersand.t
+author.t/create_critic_list.pl
 author.t/critic.t
 author.t/critic1
 author.t/display.t
@@ -38,6 +39,7 @@ author.t/perlcriticrc
 author.t/perltidyrc
 author.t/pod.t
 author.t/spelling_exceptions.list
+author.t/tidy.t
 author.t/tidy1
 config/Marpa/PP/Build_Me.pm
 config/Marpa/PP/Config.pm
@@ -52,7 +54,6 @@ lib/Marpa/PP/Callback.pm
 lib/Marpa/PP/Grammar.pm
 lib/Marpa/PP/Internal.pm
 lib/Marpa/PP/Recognizer.pm
-lib/Marpa/PP/Slot.pm
 lib/Marpa/PP/Value.pm
 pod/Advanced/Bibliography.pod
 pod/Advanced/Models.pod
@@ -68,7 +69,7 @@ pod/Semantics/Order.pod
 pod/Support.pod
 pod/Tracing.pod
 pod/Vocabulary.pod
-pperl/Marpa/Perl.pm
+pperl/Marpa/PP/Perl.pm
 t/00-load.t
 t/02-load_pp.t
 t/ah2.t
@@ -78,10 +79,11 @@ t/chaf.t
 t/code_diag.t
 t/counter.t
 t/curly.t
-t/cycle_count.t
 t/debug.t
 t/debug_leo.t
 t/debug_seq.t
+t/deprecated1.t
+t/deprecated2.t
 t/duplicate_parse.t
 t/equation.t
 t/final_nonnullable.t
@@ -98,6 +100,8 @@ t/leo_cycle.t
 t/leo_example.t
 t/limits.t
 t/minus.t
+t/no_bare.t
+t/no_xs.t
 t/null_example.t
 t/null_infinite1.t
 t/null_infinite4.t
@@ -114,6 +118,5 @@ t/syn_engine.t
 t/timeflies.t
 t/wall.t
 t/weaken.t
-tool/lib/Marpa/Display.pm
-tool/lib/Marpa/Test.pm
-tool/lib/Marpa/Test/Common.pm
+tool/lib/Marpa/PP/Display.pm
+tool/lib/Marpa/PP/Test.pm

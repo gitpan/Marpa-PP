@@ -14,6 +14,10 @@
 # General Public License along with Marpa::PP.  If not, see
 # http://www.gnu.org/licenses/.
 
+# This test uses two DEPRECATED features: the tokens() method and
+# method using the bare Marpa namespace (Marpa::) instead of Marpa::PP.
+# This code is NOT to be taken as an example.
+
 use 5.010;
 use strict;
 use warnings;
@@ -173,7 +177,7 @@ my @test_data = (
     [ 'time', q{time  / 25 ; # / ; die "this dies!"}, ['division, comment'] ]
 );
 
-my $g = Marpa::PP::Grammar->new(
+my $g = Marpa::Grammar->new(
     {   warnings => 1,
         actions  => 'main',
     },
@@ -186,17 +190,12 @@ TEST: for my $test_data (@test_data) {
 
     my ( $test_name, $test_input, $test_results ) = @{$test_data};
     my $recce =
-        Marpa::PP::Recognizer->new( { grammar => $g, mode => 'stream' } );
+        Marpa::Recognizer->new( { grammar => $g, mode => 'stream' } );
 
     my $input_length = length $test_input;
     pos $test_input = 0;
 
-# Marpa::PP::Display
-# name: Recognizer terminals_expected Synopsis
-
     my $terminals_expected = $recce->terminals_expected();
-
-# Marpa::PP::Display::End
 
     for ( my $pos = 0; $pos < $input_length; $pos++ ) {
         my @tokens = ();

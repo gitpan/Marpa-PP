@@ -13,24 +13,32 @@
 # General Public License along with Marpa::PP.  If not, see
 # http://www.gnu.org/licenses/.
 
-.PHONY: all all_tests critic display tidy
+package Marpa::PP::Test;
 
-all: all_tests
+use 5.010;
+use strict;
+use warnings;
 
-critic.list: ../MANIFEST create_critic_list.pl
-	perl ./create_critic_list.pl > critic.list
+use Data::Dumper;
 
-all_tests: critic.list
-	-(cd ..; prove author.t/*.t ) 2>&1 | tee all.errs
+Marpa::PP::exception('Test::More not loaded')
+    if not defined &Test::More::is;
 
-tidy: critic.list
-	-(cd ..; prove author.t/tidy.t) 2>&1 | tee tidy.errs
+BEGIN {
+    ## no critic (BuiltinFunctions::ProhibitStringyEval)
+    ## no critic (ErrorHandling::RequireCheckingReturnValueOfEval)
+    eval 'use Test::Differences';
+    ## use critic
+} ## end BEGIN
 
-critic: critic.list
-	-(cd ..; prove author.t/critic.t) 2>&1 | tee critic.errs
+## no critic (Subroutines::RequireArgUnpacking)
+sub Marpa::PP::Test::is {
+## use critic
+    goto &Test::Differences::eq_or_diff
+        if defined &Test::Differences::eq_or_diff && @_ > 1;
+    @_ = map { ref $_ ? Data::Dumper::Dumper(@_) : $_ } @_;
+    goto &Test::More::is;
+} ## end sub Marpa::PP::Test::is
 
-display:
-	-(cd ..; prove author.t/display.t) 2>&1 | tee display.errs
+1;
 
-pod:
-	-(cd ..; prove author.t/pod.t)

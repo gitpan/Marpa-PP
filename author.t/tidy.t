@@ -1,3 +1,4 @@
+#!/usr/bin/perl
 # Copyright 2011 Jeffrey Kegler
 # This file is part of Marpa::PP.  Marpa::PP is free software: you can
 # redistribute it and/or modify it under the terms of the GNU Lesser
@@ -13,32 +14,30 @@
 # General Public License along with Marpa::PP.  If not, see
 # http://www.gnu.org/licenses/.
 
-package Marpa::PP::Test;
-
 use 5.010;
 use strict;
 use warnings;
+use English qw( -no_match_vars );
+use Fatal qw( open close );
+use Carp;
+use Perl::Critic;
+use Test::Perl::Critic;
+use Test::More;
 
-use Data::Dumper;
-
-Marpa::exception('Test::More not loaded')
-    if not defined &Test::More::is;
-
+# Test that the module passes perlcritic
 BEGIN {
-    ## no critic (BuiltinFunctions::ProhibitStringyEval)
-    ## no critic (ErrorHandling::RequireCheckingReturnValueOfEval)
-    eval 'use Test::Differences';
-    ## use critic
-} ## end BEGIN
+    $OUTPUT_AUTOFLUSH = 1;
+}
 
-## no critic (Subroutines::RequireArgUnpacking)
-sub Marpa::Test::is {
-## use critic
-    goto &Test::Differences::eq_or_diff
-        if defined &Test::Differences::eq_or_diff && @_ > 1;
-    @_ = map { ref $_ ? Data::Dumper::Dumper(@_) : $_ } @_;
-    goto &Test::More::is;
-} ## end sub Marpa::Test::is
+open my $critic_list, '<', 'author.t/critic.list';
+my @test_files = <$critic_list>;
+close $critic_list;
+chomp @test_files;
 
-1;
-
+my $rcfile = File::Spec->catfile( 'author.t', 'perlcriticrc' );
+Test::Perl::Critic->import(
+    -verbose         => '%l:%c %p %r',
+    -profile         => $rcfile,
+    '-single-policy' => 'CodeLayout::RequireTidyCode',
+);
+Test::Perl::Critic::all_critic_ok(@test_files);

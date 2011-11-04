@@ -14,6 +14,10 @@
 # General Public License along with Marpa::PP.  If not, see
 # http://www.gnu.org/licenses/.
 
+# This test uses two DEPRECATED features: the tokens() method and
+# method using the bare Marpa namespace (Marpa::) instead of Marpa::PP.
+# This code is NOT to be taken as an example.
+
 # the example grammar in Aycock/Horspool "Practical Earley Parsing",
 # _The Computer Journal_, Vol. 45, No. 6, pp. 620-630,
 # in its "NNF" form
@@ -31,15 +35,10 @@ BEGIN {
 
 ## no critic (Subroutines::RequireArgUnpacking)
 
-# Marpa::PP::Display
-# name: Marpa::PP::token_location example
-
 sub rank_null_a {
     return \( ( $MyTest::MAXIMAL ? -1 : 1 )
-        * 10**( 3 - Marpa::PP::token_location() ) );
+        * 10**( 3 - Marpa::token_location() ) );
 }
-
-# Marpa::PP::Display::End
 
 sub default_action {
     shift;
@@ -51,7 +50,7 @@ sub default_action {
 
 ## use critic
 
-my $grammar = Marpa::PP::Grammar->new(
+my $grammar = Marpa::Grammar->new(
     {   start => 'S',
         rules => [
             [ 'S', [qw/A A A A/] ],
@@ -69,7 +68,7 @@ $grammar->set( { terminals => ['a'], } );
 
 $grammar->precompute();
 
-my $recce = Marpa::PP::Recognizer->new(
+my $recce = Marpa::Recognizer->new(
     { grammar => $grammar, ranking_method => 'constant' } );
 
 my $input_length = 4;

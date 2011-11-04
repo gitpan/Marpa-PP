@@ -1,3 +1,4 @@
+#!perl
 # Copyright 2011 Jeffrey Kegler
 # This file is part of Marpa::PP.  Marpa::PP is free software: you can
 # redistribute it and/or modify it under the terms of the GNU Lesser
@@ -13,24 +14,17 @@
 # General Public License along with Marpa::PP.  If not, see
 # http://www.gnu.org/licenses/.
 
-.PHONY: all all_tests critic display tidy
+use 5.010;
+use warnings;
+use strict;
 
-all: all_tests
+use Test::More tests => 1;
+use English qw( -no_match_vars );
 
-critic.list: ../MANIFEST create_critic_list.pl
-	perl ./create_critic_list.pl > critic.list
+my $loaded_marpa_xs = eval { require Marpa::XS; 1 };
+SKIP: {
+    Test::More::skip 'No Marpa::XS, which is OK', 1 unless $loaded_marpa_xs;
+    my $loaded_marpa = eval { require Marpa::PP; 1 };
+    Test::More::ok(!$loaded_marpa, 'Marpa::XS incompatible with Marpa::PP');
+}
 
-all_tests: critic.list
-	-(cd ..; prove author.t/*.t ) 2>&1 | tee all.errs
-
-tidy: critic.list
-	-(cd ..; prove author.t/tidy.t) 2>&1 | tee tidy.errs
-
-critic: critic.list
-	-(cd ..; prove author.t/critic.t) 2>&1 | tee critic.errs
-
-display:
-	-(cd ..; prove author.t/display.t) 2>&1 | tee display.errs
-
-pod:
-	-(cd ..; prove author.t/pod.t)
