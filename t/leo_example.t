@@ -75,19 +75,15 @@ $grammar->precompute();
 
 my $recce = Marpa::PP::Recognizer->new( { grammar => $grammar } );
 
-my @tokens = (
-    [ 'Variable',         'a' ],
-    [ 'AssignOp',         q{=} ],
-    [ 'Variable',         'b' ],
-    [ 'AddAssignOp',      q{+=} ],
-    [ 'Variable',         'c' ],
-    [ 'MinusAssignOp',    q{-=} ],
-    [ 'Variable',         'd' ],
-    [ 'MultiplyAssignOp', q{*=} ],
-    [ 'Variable',         'e' ],
-);
-
-$recce->tokens( \@tokens );
+$recce->read( 'Variable',         'a' );
+$recce->read( 'AssignOp',         q{=} );
+$recce->read( 'Variable',         'b' );
+$recce->read( 'AddAssignOp',      q{+=} );
+$recce->read( 'Variable',         'c' );
+$recce->read( 'MinusAssignOp',    q{-=} );
+$recce->read( 'Variable',         'd' );
+$recce->read( 'MultiplyAssignOp', q{*=} );
+$recce->read( 'Variable',         'e' );
 
 %My_Actions::VALUES = ( a => 711, b => 47, c => 1, d => 2, e => 3 );
 
@@ -271,7 +267,7 @@ Marpa::PP::Test::is( $value, 'a=42 b=42 c=-5 d=6 e=3', 'Leo Example Value' );
 my $show_earley_sets_output_after = $recce->show_earley_sets();
 
 SKIP: {
-    Test::More::skip "Not relevant to XS", 1 if defined $Marpa::XS::VERSION;
+    Test::More::skip 'Not relevant to XS', 1 if defined $Marpa::XS::VERSION;
     Marpa::PP::Test::is( $show_earley_sets_output_after,
         <<'END_EARLEY_SETS', 'Leo Example Earley Sets "After"' );
 Last Completed: 9; Furthest: 9
@@ -363,8 +359,8 @@ New Virtual Rule: R7:1@0-9C0@0, rule: 7: Statement['] -> Statement
 Real symbol count is 1
 END_TRACE_OUTPUT
 
-Marpa::PP::Test::is( $trace_output,
-    $expected_trace_output, 'Leo Example Trace Output' );
+Marpa::PP::Test::is( $trace_output, $expected_trace_output,
+    'Leo Example Trace Output' );
 
 1;    # In case used as "do" file
 

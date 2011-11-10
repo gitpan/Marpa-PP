@@ -33,8 +33,7 @@ my %build_requires =
     map { ( $_, $Marpa::PP::VERSION_FOR_CONFIG{$_} ) }
     qw( ExtUtils::CBuilder Test::More );
 my %configure_requires =
-    map { ( $_, $Marpa::PP::VERSION_FOR_CONFIG{$_} ) }
-    qw( Module::Build );
+    map { ( $_, $Marpa::PP::VERSION_FOR_CONFIG{$_} ) } qw( Module::Build );
 my %requires =
     map { ( $_, $Marpa::PP::VERSION_FOR_CONFIG{$_} ) }
     qw( Scalar::Util List::Util Task::Weaken Carp Data::Dumper Storable );
@@ -58,18 +57,18 @@ my %pod_files = map { ( "pod/$_" => "lib/Marpa/PP/$_" ) } qw(
 );
 $pod_files{'pod/Marpa_PP.pod'} = 'lib/Marpa/PP.pod';
 
-my @no_index_namespace_inclusive = (
-
-    # not for now, at least
-    qw(Marpa::PP::Perl Marpa::PP::Offset Marpa::PP::Test Marpa::PP::Display ),
-
-    # never intended to see the light of day
-    qw( Marpa::PP::Internal),
-
+my @no_index_namespace_inclusive = qw(
+    Marpa::PP::Callback
+    Marpa::PP::Display
+    Marpa::PP::Internal
+    Marpa::PP::Offset
+    Marpa::PP::Perl
+    Marpa::PP::Test
+    Marpa::PP::Value
 );
 
 my @files_to_cleanup = (
-    'lib/Marpa/PP/Version.pm', 'pperl/Marpa/PP/Perl/Version.pm',
+    'lib/Marpa/PP/Version.pm',   'pperl/Marpa/PP/Perl/Version.pm',
     'lib/Marpa/PP/Installed.pm', 'pperl/Marpa/PP/Perl/Installed.pm',
     'libmarpa/main/build',
 );
@@ -100,7 +99,7 @@ my $build = Marpa::PP::Build_Me->new(
     pod_files          => \%pod_files,
     create_readme      => 0,
     create_makefile_pl => 'small',
-    test_files => [ map { glob $_ } qw(t/*.t) ],
+    test_files         => [ map { glob $_ } qw(t/*.t) ],
 );
 
 $build->create_build_script;

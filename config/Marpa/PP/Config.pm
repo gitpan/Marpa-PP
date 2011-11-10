@@ -13,26 +13,26 @@
 # General Public License along with Marpa::PP.  If not, see
 # http://www.gnu.org/licenses/.
 
-use 5.010;
-
-package Marpa::PP;
-
 # This file is editable.  It is used during the
 # configuration process to set up version information.
 
+package Marpa::PP;
+
+use 5.010;
 use strict;
 use warnings;
 
 %Marpa::PP::VERSION_FOR_CONFIG = (
-    'Scalar::Util'        => 1.21,
-    'List::Util'          => 1.21,
-    'Carp'                => 1.08,
-    'Data::Dumper'        => '2.125',
-    'Storable'            => 2.21,
-    'PPI'                 => '1.206',
-    'Test::Weaken'        => '3.004000',
-    'Task::Weaken'        => '0',
-    'Module::Build'       => 0.3601,
-    'Test::More'          => 0.94,
+    'Scalar::Util'  => 1.21,
+    'List::Util'    => 1.21,
+    'Carp'          => 1.08,
+    'Data::Dumper'  => '2.125',
+    'Storable'      => 2.21,
+    'PPI'           => '1.206',
+    'Test::Weaken'  => '3.004000',
+    'Task::Weaken'  => '0',
+    'Module::Build' => 0.3601,
+    'Test::More'    => 0.94,
 );
 
+1;

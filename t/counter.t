@@ -27,6 +27,8 @@ use English qw( -no_match_vars );
 use lib 'tool/lib';
 use Marpa::PP::Test;
 
+$Marpa::PP::AUTHOR_TEST_ONLY = 99;
+
 BEGIN {
     Test::More::use_ok('Marpa::PP');
 }
@@ -89,7 +91,7 @@ my $recce = Marpa::PP::Recognizer->new(
     { grammar => $grammar, ranking_method => 'constant' } );
 
 my $input_length = 4;
-$recce->tokens( [ ( ['t'] ) x $input_length ] );
+for ( 1 .. $input_length ) { $recce->read('t'); }
 
 my @counting_up =
     qw{ 0000 0001 0010 0011 0100 0101 0110 0111 1000 1001 1010 1011 1100 1101 1110 1111 };
@@ -104,7 +106,7 @@ for my $up ( 1, 0 ) {
     while ( my $result = $recce->value() ) {
         my $got      = ${$result};
         my $expected = reverse $count->[$i];
-        say ${$result} or die("Could not print to STDOUT: $ERRNO");
+        say ${$result} or die "say: $ERRNO";
         Test::More::is( $got, $expected, "counting $direction $i" );
         $i++;
     } ## end while ( my $result = $recce->value() )

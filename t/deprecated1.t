@@ -29,6 +29,8 @@ use warnings;
 use Test::More tests => 11;
 use lib 'tool/lib';
 
+$Marpa::PP::AUTHOR_TEST_ONLY = 99;
+
 BEGIN {
     Test::More::use_ok('Marpa::PP');
 }
@@ -36,8 +38,8 @@ BEGIN {
 ## no critic (Subroutines::RequireArgUnpacking)
 
 sub rank_null_a {
-    return \( ( $MyTest::MAXIMAL ? -1 : 1 )
-        * 10**( 3 - Marpa::token_location() ) );
+    return \(
+        ( $MyTest::MAXIMAL ? -1 : 1 ) * 10**( 3 - Marpa::token_location() ) );
 }
 
 sub default_action {

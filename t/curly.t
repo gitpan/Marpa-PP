@@ -41,6 +41,7 @@ BEGIN {
     else {
         Test::More::plan tests => 6;
     }
+    $Marpa::PP::AUTHOR_TEST_ONLY = 99;
     Test::More::use_ok('Marpa::PP');
     Test::More::use_ok('Marpa::PP::Perl');
 } ## end BEGIN
@@ -136,9 +137,10 @@ TEST: for my $test (@tests) {
         $result .= "Code block at $location\n";
     }
     if ($utility) {
-        say $result;
-    } else {
-	Marpa::PP::Test::is( $result, $expected, qq{Test of "$string"} );
+        say $result or die "say: $ERRNO";
+    }
+    else {
+        Marpa::PP::Test::is( $result, $expected, qq{Test of "$string"} );
     }
     %hash      = ();
     %codeblock = ();
